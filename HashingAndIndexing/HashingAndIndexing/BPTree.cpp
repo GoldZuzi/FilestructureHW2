@@ -14,6 +14,7 @@ node *root;
 #define ENTRYSIZE 6
 #define Fanout ENTRYSIZE + 1;
 
+
 typedef union blockPointer {
 	int blockNum;
 	node *childNode;
@@ -28,28 +29,23 @@ struct entry
 struct node
 {
 	bool isLeaf;
-	bool isRoot;
 	int entryCount;
 	entry nodeEntry[ENTRYSIZE];
 	node *elseNode; //entry 내의 모든 key값보다 큰 key 값들이 저장된 노드의 포인터
-	node *nextLeafNode;
-	//node *parentNode;
 };
 
-node* createNode(bool isLeaf, node *parent) {
+node* createNode(bool isLeaf) {
 	node *newNode;
 	newNode = (struct node *)malloc(sizeof(struct node));
 	memset(newNode, 0, sizeof(struct node));
 	newNode->isLeaf = isLeaf;
-	newNode->parentNode = parent;
+	//newNode->parentNode = parent;
 	return newNode;
 }
 
 void initNode(node *initialNode) {
 	initialNode->isLeaf = true;
-	initialNode->isRoot = true;
-	initialNode->parentNode = NULL;
-	initialNode->nextLeafNode = NULL;
+	initialNode->elseNode = NULL;
 	initialNode->entryCount = 0;
 }
 
@@ -58,26 +54,25 @@ void copyNodeEntry(node *dst, node *src, int dstFirst, int srcFirst, int size) {
 	memcpy(&dst->nodeEntry[dstFirst], &src->nodeEntry[srcFirst], size);
 }
 
-static struct node* split(node *nodeToSplit, float key) {
+static struct node* split(node *nodeToSplit, float key, vector<node*> &parentSet, int parentIndex) {
 	int splitFactor = (ENTRYSIZE >> 1) - 1;
 	float splitKey = nodeToSplit->nodeEntry[splitFactor].score;
 	
-	node *parentCheck = NULL;
 	node *parentNode = NULL;
 	node *leftNode = NULL;
 	node *rightNode = NULL;
-	node *oldNode = nodeToSplit;
 	
 	/*leftNode는 기존의 노드를 그대로 사용
 	rightNode는 새로 생성하여 leftNode의
 	split 지점 이후의 원소들을 복사함*/
 	leftNode = nodeToSplit;	//
-	rightNode = createNode(nodeToSplit->isLeaf, nodeToSplit);	
-	//copyNodeEntry(leftNode, nodeToSplit, 0, 0, splitFactor + 1);
+	rightNode = createNode(nodeToSplit->isLeaf);	
 	copyNodeEntry(rightNode, nodeToSplit, 0, splitFactor + 1, ENTRYSIZE - splitFactor + 1);
+		
+	if (leftNode->isLeaf) leftNode->elseNode = rightNode;
+	else leftNode->elseNode = leftNode->nodeEntry[splitFactor + 1].a.childNode;
 	
 	/*rightNode로 복사된 원소들을 leftNode에서 제거함*/
-	leftNode->elseNode = leftNode->nodeEntry[splitFactor + 1].a.childNode;
 	for (int i = splitFactor + 1; i < ENTRYSIZE; i++) {
 		free(&leftNode->nodeEntry[i]);
 	}
@@ -86,25 +81,19 @@ static struct node* split(node *nodeToSplit, float key) {
 	rightNode->entryCount = ENTRYSIZE - splitFactor + 1;
 	
 	/*ParentNode를 지정하는 과정*/
-	if (nodeToSplit->isRoot) {   //분할되는 노드가 기존의 루트노드였을 경우
-		parentNode = createNode(false, NULL); //ParentNode 생성
+	if (parentSet[parentIndex] == NULL) {   //분할되는 노드가 기존의 루트노드였을 경우
+		parentNode = createNode(false); //ParentNode 생성
 		root = parentNode;
-		parentNode->isRoot = true;
-		leftNode->isRoot = false;
 	}
 	
-	else { //ParentNode는 원래의 노드가 가리키던 노드
-		parentNode = nodeToSplit->parentNode;
+	else { //ParentNode는 기존 노드의 상위 노드
+		parentNode = parentSet[parentIndex];
 		
 		/*parentNode가 꽉 찼을 경우 스플릿*/
 		if (parentNode->entryCount == ENTRYSIZE) {
-			parentNode = split(parentNode, splitKey);
+			parentNode = split(parentNode, splitKey, parentSet, parentIndex - 1);
 		}
 	}
-
-	leftNode->parentNode = parentNode;
-	rightNode->parentNode = parentNode;
-	leftNode->nextLeafNode = rightNode;
 	
 	/*---------여기에 parent노드에 삽입되는 부분 작성--------*/
 	internalNodeInsert(parentNode, splitKey, leftNode, rightNode);
@@ -192,6 +181,8 @@ bool insert(float key, blockPointer ptr) {
 	node *tmpNode = root;
 	int count;
 	int index;
+	vector<node*> parentSet;
+	node *parentNode = NULL;
 
 	/*key값이 이미 트리에 존재하는지 체크*/
 	if (search(key) >= 0) {
@@ -200,11 +191,13 @@ bool insert(float key, blockPointer ptr) {
 
 	/*엔트리를 삽입할 리프노드를 찾는 단계*/
 	while (1) {
+		parentSet.push_back(parentNode);
 		if (tmpNode->isLeaf) break;
 		if (tmpNode->entryCount > 0) {
 			for (int i = 0; i < tmpNode->entryCount; i++) {
 				count++;
 				if (key <= tmpNode->nodeEntry[i].score) {
+					parentNode = tmpNode;
 					tmpNode = tmpNode->nodeEntry[i].a.childNode;
 					break;
 				}
@@ -217,7 +210,7 @@ bool insert(float key, blockPointer ptr) {
 
 	/*해당 리프가 꽉 찼을 경우 노드 분할*/
 	if (tmpNode->entryCount == ENTRYSIZE) {
-		tmpNode = split(tmpNode, key);
+		tmpNode = split(tmpNode, key, parentSet, parentSet.size() - 1);
 	}
 
 	/*새로운 엔트리 생성*/

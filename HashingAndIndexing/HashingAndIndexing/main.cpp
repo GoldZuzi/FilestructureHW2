@@ -1,36 +1,39 @@
 #include "BPTree.h"
 
 node *root = createNode();
+FILE* pFile = NULL;
 
 int main() {
+	
 	initNode(root);
+	loadFile();
 	int b = 0;
 	blockPointer a;
-	a.blockNum = 4;
-	insert(3.3, a);
-	a.blockNum = 5;
-	insert(3.4, a);
-	a.blockNum = 6;
-	insert(3.5, a);
+	//a.blockNum = 4;
+	//insert(3.3, a);
+	//a.blockNum = 5;
+	//insert(3.4, a);
+	//a.blockNum = 6;
+	//insert(3.5, a);
 
-	a.blockNum = 7;
-	insert(3.6, a);
-	a.blockNum = 8;
-	insert(3.7, a);
-	a.blockNum = 9;
-	insert(3.8, a);
+	//a.blockNum = 7;
+	//insert(3.6, a);
+	//a.blockNum = 8;
+	//insert(3.7, a);
+	//a.blockNum = 9;
+	//insert(3.8, a);
 
-	a.blockNum = 10;
-	insert(3.9, a);
-	a.blockNum = 11;
-	insert(4.0, a);
-	a.blockNum = 12;
-	insert(3.55, a);
+	//a.blockNum = 10;
+	//insert(3.9, a);
+	//a.blockNum = 11;
+	//insert(4.0, a);
+	//a.blockNum = 12;
+	//insert(3.55, a);
 
-	a.blockNum = 17;
-	insert(3.42, a);
-	a.blockNum = 20;
-	insert(3.58, a);
+	//a.blockNum = 17;
+	//insert(3.42, a);
+	//a.blockNum = 20;
+	//insert(3.58, a);
 
 	b = search(3.3);
 	printf("%d ", b);
@@ -54,5 +57,9 @@ int main() {
 	printf("%d ", b);
 	b = search(4.0);
 	printf("%d ", b);
+	b = sizeof(struct node);
+	printf("%d ", b);
+	//makeFile();
+
 	return 0;
 }

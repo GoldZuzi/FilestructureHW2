@@ -69,8 +69,12 @@ static struct node* split(node *nodeToSplit, float key, vector<node*> &parentSet
 	/*---------여기에 parent노드에 삽입되는 부분 작성--------*/
 	internalNodeInsert(parentNode, splitKey, leftNode, rightNode);
 
-	if (key < splitKey) return leftNode;
-	else return rightNode;
+	if (key < splitKey) {
+		return leftNode;
+	}
+	else {
+		return rightNode;
+	}
 }
 
 void internalNodeInsert(node *internalNode, float key, node *leftNode, node *rightNode) {
@@ -218,14 +222,56 @@ bool insert(float key, blockPointer ptr) {
 	/*노드에 엔트리를 삽입*/
 	//if (tmpNode->isLeaf) { 
 		/*노드가 리프일 경우(무조건 리프일듯)*/		
-		for (int i = tmpNode->entryCount; i > index; i--) {
-			memcpy(&tmpNode->nodeEntry[i], &tmpNode->nodeEntry[i - 1], sizeof(struct entry)); //엔트리를 하나씩 right shift
-		}
-		memset(&tmpNode->nodeEntry[index], 0, sizeof(struct entry)); //삽입할 엔트리 번지 초기화
-		memcpy(&tmpNode->nodeEntry[index], &newEntry, sizeof(struct entry)); //엔트리 삽입
-		tmpNode->entryCount++;
+	for (int i = tmpNode->entryCount; i > index; i--) {
+		memcpy(&tmpNode->nodeEntry[i], &tmpNode->nodeEntry[i - 1], sizeof(struct entry)); //엔트리를 하나씩 right shift
+	}
+	memset(&tmpNode->nodeEntry[index], 0, sizeof(struct entry)); //삽입할 엔트리 번지 초기화
+	memcpy(&tmpNode->nodeEntry[index], &newEntry, sizeof(struct entry)); //엔트리 삽입
+	tmpNode->entryCount++;
 	//}
+
 	return true;
+}
+void makeFile() {
+	fopen_s(&pFile, "Students_score.idx", "wb");
+	fwrite(&depth, 4096, 1, pFile);
+	writeNodeInfo(root, 0);
+	fclose(pFile);
+}
+void writeNodeInfo(node *currentNode, int currentDepth) {
+	fwrite(currentNode, sizeof(node), 1, pFile);
+	if (currentDepth != depth) {
+		for (int i = 0; i < currentNode->entryCount; i++) {
+			writeNodeInfo(currentNode->nodeEntry[i].a.childNode, currentDepth + 1);
+		}
+		writeNodeInfo(currentNode->elseNode, currentDepth + 1);
+	}
+}
+
+void loadFile() {
+	void *skip = new int[1023];
+	fopen_s(&pFile, "Students_score.idx", "rb");
+	fread(&depth, sizeof(int), 1, pFile);
+	fread(skip, sizeof(int), 1023, pFile);
+	loadNodeInfo(root, 0);
+	fclose(pFile);
+}
+
+void loadNodeInfo(node *currentNode, int currentDepth) {
+	//node *tmp;
+	fread(&currentNode->entryCount, sizeof(int), 1, pFile);
+	fread(currentNode->nodeEntry, sizeof(entry), ENTRYSIZE, pFile);
+	fread(&currentNode->elseNode, sizeof(node*), 1, pFile);
+	if (!feof(pFile)) {
+		if (currentDepth != depth) {
+			for (int i = 0; i < currentNode->entryCount; i++) {
+				currentNode->nodeEntry[i].a.childNode = createNode();
+				loadNodeInfo(currentNode->nodeEntry[i].a.childNode, currentDepth + 1);
+			}
+			currentNode->elseNode = createNode();
+			loadNodeInfo(currentNode->elseNode, currentDepth + 1);			
+		}
+	}
 }
 
 

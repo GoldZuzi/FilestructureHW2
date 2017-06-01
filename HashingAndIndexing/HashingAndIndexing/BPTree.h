@@ -27,8 +27,11 @@ struct node
 	entry nodeEntry[ENTRYSIZE];
 	node *elseNode; //entry 내의 모든 key값보다 큰 key 값들이 저장된 노드의 포인터
 };
+
 extern node* root;
 extern FILE* pFile;
+extern int depth;
+
 node* createNode();
 void initNode(node *initialNode);
 int search(float key);

@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#define ENTRYSIZE 511
+#define ENTRYSIZE 255
 
 typedef struct node;
 
 union blockPointer {
-	unsigned int blockNum;
+	int blockNum;
 	node *childNode;
 };
 

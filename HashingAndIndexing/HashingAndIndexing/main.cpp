@@ -48,68 +48,21 @@ int main() {
 	makeFile();
 	createDB(hashRoot);
 	createHashTableFile(hashRoot);
-	//a.blockNum = 4;
-	//insert(3.3, a);
-	//a.blockNum = 5;
-	//insert(3.4, a);
-	//a.blockNum = 6;
-	//insert(3.5, a);
+	printf("%d", sizeof(struct node));
 
-	//a.blockNum = 7;
-	//insert(3.6, a);
-	//a.blockNum = 8;
-	//insert(3.7, a);
-	//a.blockNum = 9;
-	//insert(3.8, a);
-
-	//a.blockNum = 10;
-	//insert(3.9, a);
-	//a.blockNum = 11;
-	//insert(4.0, a);
-	//a.blockNum = 12;
-	//insert(3.55, a);
-
-	//a.blockNum = 17;
-	//insert(3.42, a);
-	//a.blockNum = 20;
-	//insert(3.58, a);
-
-	//makeFile();
-
+	int kthPos = 0;
 	node* kthNode;
-	kthNode = sequencialSearch(1);
+	printf("원하는 리프노드 번호 입력: ");
+	scanf_s("%d", &kthPos);
+	fflush(stdin);
+	kthNode = sequencialSearch(kthPos);
 	if (kthNode != NULL) {
 		for (int i = 0; i < kthNode->entryCount; i++) {
 			printf("%f  ", kthNode->nodeEntry[i].score);
 		}
 	}
 	else
-		printf("there is no %dth node\n", 6);
-
-	/*b = search(3.3);
-	printf("%d ", b);
-	b = search(3.4);
-	printf("%d ", b);
-	b = search(3.42);
-	printf("%d ", b);
-	b = search(3.5);
-	printf("%d ", b);
-	b = search(3.55);
-	printf("%d ", b);
-	b = search(3.58);
-	printf("%d ", b);
-	b = search(3.6);
-	printf("%d ", b);
-	b = search(3.7);
-	printf("%d ", b);
-	b = search(3.8);
-	printf("%d ", b);
-	b = search(3.9);
-	printf("%d ", b);
-	b = search(4.0);
-	printf("%d ", b);*/
-	//b = sizeof(struct node);
-	//printf("%d ", b);
+		printf("there is no %dth node\n", kthPos);
 	
 
 	return 0;

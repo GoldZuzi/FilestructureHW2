@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C601DFB9-5961-4310-85C9-DA1D1B1F07C5}</ProjectGuid>
+    <ProjectGuid>{2E3286D3-ABDA-4E51-8ACD-7394202C2CF1}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>HashingAndIndexing</RootNamespace>
+    <RootNamespace>hashTest</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -146,14 +146,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BPTree.cpp" />
-    <ClCompile Include="hash.cpp" />
-    <ClCompile Include="indexingFileManage.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="소스.cpp" />
+    <ClCompile Include="소스1.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BPTree.h" />
-    <ClInclude Include="hash.h" />
+    <ClInclude Include="hasht.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

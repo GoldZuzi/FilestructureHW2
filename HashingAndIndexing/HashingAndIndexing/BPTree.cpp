@@ -1,5 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
+#include <vector>
+#include <iostream>
 #include "BPTree.h"
-
+using namespace std;
 int depth;
 
 node* createNode() {
@@ -24,7 +29,7 @@ void copyNodeEntry(node *dst, node *src, int dstFirst, int srcFirst, int size) {
 }
 
 static struct node* split(node *nodeToSplit, float key, vector<node*> &parentSet, int parentIndex, bool isLeaf) {
-	int splitFactor = (ENTRYSIZE >> 1) - 1;
+	int splitFactor = ((ENTRYSIZE -1) >> 1);
 	float splitKey = nodeToSplit->nodeEntry[splitFactor].score;
 	
 	node *parentNode = NULL;
@@ -39,7 +44,10 @@ static struct node* split(node *nodeToSplit, float key, vector<node*> &parentSet
 	rightNode = createNode();
 	copyNodeEntry(rightNode, nodeToSplit, 0, splitFactor + 1, ENTRYSIZE - splitFactor + 1);
 		
-	if (isLeaf) leftNode->elseNode = rightNode;
+	if (isLeaf) {
+		rightNode->elseNode = leftNode->elseNode;
+		leftNode->elseNode = rightNode;
+	}
 	else leftNode->elseNode = leftNode->nodeEntry[splitFactor + 1].a.childNode;
 	
 	/*rightNode로 복사된 원소들을 leftNode에서 제거함*/
@@ -233,6 +241,31 @@ bool insert(float key, blockPointer ptr) {
 	return true;
 }
 
+node* sequencialSearch(int k) {
+	node *tmp;
+	tmp = root;
+	int currentDepth = 0;
+	tmp = seqSearchDetail(root, k, currentDepth);
+	for (int i = 1; i < k; i++) {
+		if (tmp->elseNode != NULL) {
+			tmp = tmp->elseNode;
+		}
+		else
+			return NULL;
+	}
+	return tmp;
+}
+node* seqSearchDetail(node *currentNode, int k, int currentDepth) {
+	if (currentDepth != depth) {
+		if (currentNode->entryCount != 0) {
+			return seqSearchDetail(currentNode->nodeEntry[0].a.childNode, k, currentDepth + 1);
+		}
+		else
+			return NULL;
+	}
+	else
+		return currentNode;
+}
 
 
 

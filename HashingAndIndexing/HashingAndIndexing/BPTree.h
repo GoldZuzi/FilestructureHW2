@@ -2,16 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <vector>
-#include <iostream>
-using namespace std;
-
-#define ENTRYSIZE 3
+#define ENTRYSIZE 511
 
 typedef struct node;
 
 union blockPointer {
-	int blockNum;
+	unsigned int blockNum;
 	node *childNode;
 };
 
@@ -43,3 +39,5 @@ void writeNodeInfo(node *currentNode, int currentDepth);
 void makeFile();
 void loadFile();
 void loadNodeInfo(node *currentNode, int currentDepth);
+node* sequencialSearch(int k);
+node* seqSearchDetail(node *currentNode, int k, int currentDepth);

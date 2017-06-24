@@ -229,8 +229,10 @@ void rangeSearch(float min, float max) {
 			{
 				if (max >= currentNode->nodeEntry[i].score) {
 					blockNum = currentNode->nodeEntry[i].a.blockNum;
-					cout << blockNum << endl;
-					//searchDB(blockNum);
+					if (tableType == studentTable)
+						studentExactSearch(blockNum);
+					else
+						profExactSearch(blockNum);
 				}
 				else {
 					more = false;

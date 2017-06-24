@@ -7,6 +7,7 @@ using namespace std;
 
 node *root = createNode();
 hashNode *hashRoot = createHashNode();
+hashNode *prHashRoot = createHashNode();
 FILE* pFile = NULL;
 const bool studentTable = false;
 const bool profTable = true;
@@ -56,7 +57,7 @@ void makeStudentDB() {
 		insert(st.score, a);
 	}
 	fclose(pFile);
-	//createDB(hashRoot);
+	createDB(hashRoot);
 	makeHashTable(&stTable, hashRoot);
 	createHashTableFile(&stTable);
 	
@@ -69,7 +70,7 @@ void makeProfessorDB() {
 	root = createNode();
 	ifstream DB("prof_data.csv");
 	initNode(root);
-	initNode(hashRoot);
+	initNode(prHashRoot);
 	int b = 0;
 	int count;
 	int debugcount = 0;
@@ -95,18 +96,20 @@ void makeProfessorDB() {
 		if (i == 127) {
 			printf("");
 		}
-		//insert(prof, hashRoot);
+		insert(prof, prHashRoot);
 		a.blockNum = prof.professorID;
 		insert(prof.salary, a);
 	}
 	fclose(pFile);
-	//createDB(hashRoot);
-	//createHashTableFile(hashRoot);
+	createDB(prHashRoot);
+	makeHashTable(&prTable, prHashRoot);
+	createHashTableFile(&prTable);
 
 }
 
 
 void scoreRangeSearch(float min, float max) {
+	tableType = studentTable;
 	fopen_s(&pFile, "Students_score.idx", "rb");
 	loadFile();
 	rangeSearch(min, max);
@@ -114,6 +117,7 @@ void scoreRangeSearch(float min, float max) {
 }
 
 void salaryRangeSearch(int min, int max) {
+	tableType = profTable;
 	float fmin = min;
 	float fmax = max;
 	fopen_s(&pFile, "Professor_Salary.idx", "rb");
@@ -122,23 +126,48 @@ void salaryRangeSearch(int min, int max) {
 	fclose(pFile);
 }
 
-void studentExactSearch(int key) {
-	
+void studentExactSearch(int key) {		
 	char *binaryKey;
 	int blockNum;
+	int index;
 	binaryKey = uintToBinary(key);
-	int count = 0;
-	hashNode *tmp;
-	tmp = hashRoot;
-	while(1){
-		if (hashCompare(tmp->key, binaryKey, tmp->prefix)) {
-					
+	int prefix = stTable.prefix;
+	memset(binaryKey, '0', 32 - prefix);
+	index = binaryToUint(binaryKey);
+	blockNum = stTable.blockNum[index];
+	student st[MAXNUM];
+	int pos = 4096 * blockNum;
+	fseek(stDB, pos, SEEK_SET);
+	fread(st, sizeof(struct student), MAXNUM, stDB);
+	rewind(stDB);
+	for (int i = 0; i < MAXNUM; i++) {
+		if (key == st[i].studentID) {
+			cout << st[i].name << "  " << st[i].studentID << "  " << st[i].score << "  " << st[i].advisorID << endl; //여기에 파일 추가하는 부분 추가
+			break;
 		}
 	}
 }
 
 void profExactSearch(int key) {
-
+	char *binaryKey;
+	int blockNum;
+	int index;
+	binaryKey = uintToBinary(key);
+	int prefix = prTable.prefix;
+	memset(binaryKey, '0', 32 - prefix);
+	index = binaryToUint(binaryKey);
+	blockNum = prTable.blockNum[index];
+	professor pf[146];
+	int pos = 4096 * blockNum;
+	fseek(proDB, pos, SEEK_SET);
+	fread(pf, sizeof(struct professor), 146, proDB);
+	rewind(proDB);
+	for (int i = 0; i < 146; i++) {
+		if (key == pf[i].professorID) {
+			cout << pf[i].name << "  " << pf[i].professorID << "  " << pf[i].salary << endl; //여기에 파일 추가하는 부분 추가
+			break;
+		}
+	}
 }
 
 void join() {
@@ -146,7 +175,6 @@ void join() {
 }
 
 void query() {
-	fopen_s(&stDB, "stdents.DB", "rb");
 	ifstream DB("query.csv");
 	int count;
 	char input[50];
@@ -217,14 +245,17 @@ void query() {
 
 
 int main() {
-	makeStudentDB();
+	//makeStudentDB();
 	//makeProfessorDB();
+	fopen_s(&stDB, "students.DB", "rb");
+	fopen_s(&proDB, "professors.DB", "rb");
+	loadHashTable(&stTable, studentTable);
+	loadHashTable(&prTable, profTable);		
+	//studentExactSearch(30585);
+	scoreRangeSearch(6.19001, 6.3);
 	//salaryRangeSearch(100003, 100530);
-
-	int prefix;
-	char key[33];
-	int blockNum;
-
+	fclose(proDB);
+	fclose(stDB);
 	return 0;
 }
 

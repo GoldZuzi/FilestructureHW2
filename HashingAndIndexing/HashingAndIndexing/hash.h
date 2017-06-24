@@ -42,12 +42,12 @@ struct hashTable {
 
 void createHashTableFile(hashTable *tb);
 void insert(student st, hashNode *node);
+void insert(professor prof, hashNode *node);
 void split(hashNode* oldNode);
 bool hashCompare(char *val, char* key, int prefix);
 hashNode *createHashNode();
 void initNode(hashNode *node);
 bucket *createBucket();
-student *createStudent();
 void createDB(hashNode *node);
 char *uintToBinary(unsigned int i);
 bool hashCompare(char *val, char* key, int prefix);
@@ -55,3 +55,5 @@ void makeHashTable(hashTable *tb, hashNode *hsNode);
 extern const bool studentTable;
 extern const bool profTable;
 extern bool tableType;
+void loadHashTable(hashTable *tmp, bool);
+unsigned int binaryToUint(char *s);

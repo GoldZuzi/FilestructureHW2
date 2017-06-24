@@ -17,6 +17,9 @@ void initBucket(bucket *bk) {
 	bk->bucketNum = 0;
 }
 void initNode(hashNode *node) {
+	maxPrefix = 0;
+	bucketCount = 0;
+	nodeCount = 1;
 	node->prefix = 0;
 	for (int i = 0; i < 32; i++) {
 		node->key[i] = '0';
@@ -24,9 +27,7 @@ void initNode(hashNode *node) {
 	node->buc = createBucket();
 	initBucket(node->buc);
 	node->next = NULL;
-	maxPrefix = 0;
-	bucketCount = 0;
-	nodeCount = 0;
+	
 }
 
 char *uintToBinary(unsigned int i) {
@@ -70,7 +71,9 @@ bool hashCompare(char *val, char* key, int prefix) {
 void split(hashNode* oldNode) {
 	char *tmp;
 	bool isEqual;
-	int k = 128;
+	int k;
+	if (tableType == studentTable) k = 128;
+	else k = 146;
 	hashNode *newNode;
 	newNode = createHashNode();
 	newNode->buc = createBucket();
@@ -87,18 +90,28 @@ void split(hashNode* oldNode) {
 
 	/*분할된 버킷사이의 옮기는 작업*/
 	for (int i = 0; i < k; i++) {
-		if(tableType == studentTable)
+		if (tableType == studentTable)
 			tmp = uintToBinary(oldNode->buc->data.studentSet[i].studentID);
 		else
-			tmp = uintToBinary()
+			tmp = uintToBinary(oldNode->buc->data.professorSet[i].professorID);
 		isEqual = hashCompare(tmp, oldNode->key, oldNode->prefix);
 		if (!isEqual) {
-			newNode->buc->studentSet[newNode->buc->count] = oldNode->buc->studentSet[i];
-			newNode->buc->count++;
-			memmove(&oldNode->buc->studentSet[i], &oldNode->buc->studentSet[i + 1], sizeof(struct student) * (oldNode->buc->count - i - 1));
-			oldNode->buc->count--;
-			k--;
-			i--;
+			if (tableType == studentTable) {
+				newNode->buc->data.studentSet[newNode->buc->count] = oldNode->buc->data.studentSet[i];
+				newNode->buc->count++;
+				memmove(&oldNode->buc->data.studentSet[i], &oldNode->buc->data.studentSet[i + 1], sizeof(struct student) * (oldNode->buc->count - i - 1));
+				oldNode->buc->count--;
+				k--;
+				i--;
+			}
+			else {
+				newNode->buc->data.professorSet[newNode->buc->count] = oldNode->buc->data.professorSet[i];
+				newNode->buc->count++;
+				memmove(&oldNode->buc->data.professorSet[i], &oldNode->buc->data.professorSet[i + 1], sizeof(struct professor) * (oldNode->buc->count - i - 1));
+				oldNode->buc->count--;
+				k--;
+				i--;
+			}
 		}
 		//free(tmp);
 	}
@@ -121,7 +134,7 @@ void insert(student st, hashNode *node) {
 	}
 	if (node->buc->count < MAXNUM)
 	{
-		node->buc->studentSet[node->buc->count] = st;
+		node->buc->data.studentSet[node->buc->count] = st;
 		node->buc->count++;
 	}
 	else {
@@ -129,23 +142,58 @@ void insert(student st, hashNode *node) {
 		key = uintToBinary(st.studentID);
 		isEqual = hashCompare(key, node->key, node->prefix);
 		if (isEqual) {
-			node->buc->studentSet[node->buc->count] = st;
+			node->buc->data.studentSet[node->buc->count] = st;
 			node->buc->count++;
 		}
 		else {
 			node = node->next;
-			node->buc->studentSet[node->buc->count] = st;
+			node->buc->data.studentSet[node->buc->count] = st;
 			node->buc->count++;
 		}
 	}
 }
+
+void insert(professor prof, hashNode *node) {
+	char *key;
+	bool isEqual;
+	for (int i = 0; i < nodeCount; i++) {
+		key = uintToBinary(prof.professorID);
+		isEqual = hashCompare(key, node->key, node->prefix);
+		if (isEqual) {
+			break;
+		}
+		else {
+			node = node->next;
+		}
+	}
+	if (node->buc->count < 146)
+	{
+		node->buc->data.professorSet[node->buc->count] = prof;
+		node->buc->count++;
+	}
+	else {
+		split(node);
+		key = uintToBinary(prof.professorID);
+		isEqual = hashCompare(key, node->key, node->prefix);
+		if (isEqual) {
+			node->buc->data.professorSet[node->buc->count] = prof;
+			node->buc->count++;
+		}
+		else {
+			node = node->next;
+			node->buc->data.professorSet[node->buc->count] = prof;
+			node->buc->count++;
+		}
+	}
+}
+
 void createHashTableFile(hashTable *tb) {
 	FILE* pFile = NULL;
-	fopen_s(&pFile, "student.hash", "wb");
-
-	fwrite(tb, sizeof(hashTable), 1, pFile);
-
-	
+	if (tableType == studentTable)
+		fopen_s(&pFile, "student.hash", "wb");
+	else
+		fopen_s(&pFile, "professor.hash", "wb");
+	fwrite(tb, sizeof(hashTable), 1, pFile);	
 	fclose(pFile);
 }
 
@@ -165,16 +213,45 @@ void makeHashTable(hashTable *tb, hashNode *hsNode) {
 
 void createDB(hashNode *node) {
 	FILE *pFile = NULL;
-	fopen_s(&pFile, "students.DB", "wb");
-	for (int i = 0; i < nodeCount; i++) {
-		fwrite(node->buc->studentSet, sizeof(struct student), MAXNUM, pFile);
-		free(node->buc);
-		node = node->next;
+	if (tableType == studentTable) {
+		fopen_s(&pFile, "students.DB", "wb");
+		for (int i = 0; i < nodeCount; i++) {
+			fwrite(node->buc->data.studentSet, sizeof(struct student), MAXNUM, pFile);
+			free(node->buc);
+			node = node->next;
+		}
+		fclose(pFile);
 	}
+	else {
+		fopen_s(&pFile, "professors.DB", "wb");
+		for (int i = 0; i < nodeCount; i++) {
+			fwrite(node->buc->data.professorSet, 4096, 1, pFile);
+			free(node->buc);
+			node = node->next;
+		}
+		fclose(pFile);
+	}
+}
+
+void loadHashTable(hashTable *tmp, bool select) {
+	FILE *pFile = NULL;
+	if (select == studentTable)
+		fopen_s(&pFile, "student.hash", "rb");
+	else
+		fopen_s(&pFile, "professor.hash", "rb");
+	fread(tmp, sizeof(hashTable), 1, pFile);
 	fclose(pFile);
 }
 
+unsigned int binaryToUint(char *s) {
+	unsigned int i = 0;
+	int count = 0;
 
+	while (s[count])
+		i = (i << 1) | (s[count++] - '0');
+
+	return i;
+}
 
 
 

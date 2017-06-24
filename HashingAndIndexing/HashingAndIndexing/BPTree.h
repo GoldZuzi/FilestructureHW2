@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#define ENTRYSIZE 255
+#define ENTRYSIZE 511
 
 typedef struct node;
 
 union blockPointer {
-	int blockNum;
-	node *childNode;
+	unsigned int blockNum;
+	unsigned int childNode;
 };
 
 struct entry
@@ -21,23 +21,30 @@ struct node
 {
 	int entryCount;
 	entry nodeEntry[ENTRYSIZE];
-	node *elseNode; //entry 내의 모든 key값보다 큰 key 값들이 저장된 노드의 포인터
+	int elseNode; //entry 내의 모든 key값보다 큰 key 값들이 저장된 노드의 포인터
 };
 
 extern node* root;
 extern FILE* pFile;
 extern int depth;
+extern int btNodeCount;
+extern int btRootNodeNum;
+extern const bool studentTable;
+extern const bool profTable;
+extern bool tableType;
 
 node* createNode();
 void initNode(node *initialNode);
 int search(float key);
 bool insert(float key, blockPointer ptr);
-void internalNodeInsert(node *internalNode, float key, node *leftNode, node *rightNode);
+void internalNodeInsert(node *internalNode, float key, int leftNode, int rightNode);
 void createNewEntry(entry *newEntry, bool isLeaf, float key, blockPointer ptr);
 int searchDetail(node *currentNode, float key);
-void writeNodeInfo(node *currentNode, int currentDepth);
+void writeNodeInfo(node *currentNode, int nodeBlockNum);
 void makeFile();
 void loadFile();
-void loadNodeInfo(node *currentNode, int currentDepth);
-node* sequencialSearch(int k);
-node* seqSearchDetail(node *currentNode, int k, int currentDepth);
+void loadNodeInfo(node *currentNode, int nodeBlockNum);
+//node* sequencialSearch(int k);
+//node* seqSearchDetail(node *currentNode, int k, int currentDepth);
+void writeCommonInfo();
+void rangeSearch(float min, float max);

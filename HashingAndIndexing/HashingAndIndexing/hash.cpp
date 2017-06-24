@@ -5,18 +5,15 @@
 #include <vector>
 #include <iostream>
 #include "hash.h"
+#include <math.h>
 using namespace std;
-
 
 int maxPrefix = 0;
 int bucketCount = 0;
 int nodeCount = 0;
 
-
-
 void initBucket(bucket *bk) {
 	bk->count = 0;
-	bk->prefix = 0;
 	bk->bucketNum = 0;
 }
 void initNode(hashNode *node) {
@@ -26,8 +23,10 @@ void initNode(hashNode *node) {
 	}
 	node->buc = createBucket();
 	initBucket(node->buc);
-	node->expand = false;
 	node->next = NULL;
+	maxPrefix = 0;
+	bucketCount = 0;
+	nodeCount = 0;
 }
 
 char *uintToBinary(unsigned int i) {
@@ -42,12 +41,6 @@ char *uintToBinary(unsigned int i) {
 	return s;
 }
 
-student *createStudent() {
-	student *st;
-	st = (struct student *)malloc(sizeof(struct student));
-	memset(st, 0, sizeof(struct bucket));
-	return st;
-}
 
 bucket *createBucket() {
 	bucketCount++;
@@ -65,10 +58,6 @@ hashNode *createHashNode() {
 	memset(node, 0, sizeof(struct hashNode));
 	return node;
 }
-//
-//hashNode* search(unsigned int id) {
-//	
-//}
 
 bool hashCompare(char *val, char* key, int prefix) {
 	for (int i = 0 ; i < prefix; i++) {
@@ -77,36 +66,31 @@ bool hashCompare(char *val, char* key, int prefix) {
 	}
 	return true;
 }
-//int calculateBlockNum(char *key) {
-//	int dec = 0;
-//	for (int i = maxPrefix; i < 32; i++) {
-//
-//	}
-//
-//}
 
 void split(hashNode* oldNode) {
 	char *tmp;
 	bool isEqual;
-	int k = MAXNUM;
+	int k = 128;
 	hashNode *newNode;
 	newNode = createHashNode();
 	newNode->buc = createBucket();
-	bucketCount++;
 	newNode->buc->bucketNum = bucketCount;
 	strcpy(newNode->key, oldNode->key);
 	oldNode->key[31 - oldNode->prefix] = '0';
 	newNode->key[31 - oldNode->prefix] = '1';
 	
-	oldNode->buc->prefix++;
+	//oldNode->buc->prefix++;
 	oldNode->prefix++;
-	newNode->buc->prefix++;
-	newNode->prefix++;
+	//newNode->buc->prefix = oldNode->prefix;
+	newNode->prefix = oldNode->prefix;
 	if (newNode->prefix > maxPrefix) maxPrefix = newNode->prefix;
 
 	/*분할된 버킷사이의 옮기는 작업*/
 	for (int i = 0; i < k; i++) {
-		tmp = uintToBinary(oldNode->buc->studentSet[i].studentID);
+		if(tableType == studentTable)
+			tmp = uintToBinary(oldNode->buc->data.studentSet[i].studentID);
+		else
+			tmp = uintToBinary()
 		isEqual = hashCompare(tmp, oldNode->key, oldNode->prefix);
 		if (!isEqual) {
 			newNode->buc->studentSet[newNode->buc->count] = oldNode->buc->studentSet[i];
@@ -114,6 +98,7 @@ void split(hashNode* oldNode) {
 			memmove(&oldNode->buc->studentSet[i], &oldNode->buc->studentSet[i + 1], sizeof(struct student) * (oldNode->buc->count - i - 1));
 			oldNode->buc->count--;
 			k--;
+			i--;
 		}
 		//free(tmp);
 	}
@@ -154,16 +139,28 @@ void insert(student st, hashNode *node) {
 		}
 	}
 }
-void createHashTableFile(hashNode *node) {
+void createHashTableFile(hashTable *tb) {
 	FILE* pFile = NULL;
 	fopen_s(&pFile, "student.hash", "wb");
-	for (int i = 0; i < nodeCount; i++) {
-		fwrite(&node->prefix, sizeof(int), 1, pFile);
-		fwrite(node->key, sizeof(char), 33, pFile);
-		fwrite(&i, sizeof(int), 1, pFile);
-		node = node->next;
-	}
+
+	fwrite(tb, sizeof(hashTable), 1, pFile);
+
+	
 	fclose(pFile);
+}
+
+void makeHashTable(hashTable *tb, hashNode *hsNode) {
+	//int maxPrefix = 0;
+	char *binary;
+	tb->prefix = maxPrefix;
+	for (int i = 0; i < nodeCount; i++) {
+		for (int j = 0; j < (int)pow(2, maxPrefix); j++) {
+			binary = uintToBinary(j);
+			if(hashCompare(binary, hsNode->key, hsNode->prefix))
+				tb->blockNum[j] = i;
+		}
+		hsNode = hsNode->next;
+	}
 }
 
 void createDB(hashNode *node) {
@@ -171,12 +168,11 @@ void createDB(hashNode *node) {
 	fopen_s(&pFile, "students.DB", "wb");
 	for (int i = 0; i < nodeCount; i++) {
 		fwrite(node->buc->studentSet, sizeof(struct student), MAXNUM, pFile);
+		free(node->buc);
 		node = node->next;
 	}
 	fclose(pFile);
 }
-
-
 
 
 

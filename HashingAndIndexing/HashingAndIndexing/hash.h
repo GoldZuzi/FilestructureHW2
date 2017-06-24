@@ -8,11 +8,21 @@ struct student {
 	unsigned int advisorID;
 };
 
+struct professor {
+	char name[20];
+	int professorID;
+	int salary;
+};
+
+union dataSet {
+	student studentSet[MAXNUM];
+	professor professorSet[146];
+};
+
 struct bucket {
 	int bucketNum;
 	int count;
-	int prefix;
-	student studentSet[MAXNUM];
+	dataSet data;
 };
 
 struct hashNode
@@ -20,25 +30,28 @@ struct hashNode
 	int prefix;
 	char key[33];
 	bucket *buc;
-	bool expand;
 	hashNode* next;
 };
 
-//struct hashTable {
-//	int prefix;
-//	vector<hashNode*> nodeSet;
-//
-//};
 
 
+struct hashTable {
+	int prefix;
+	int blockNum[5000];
+};
 
-void createHashTableFile(hashNode *node);
+void createHashTableFile(hashTable *tb);
 void insert(student st, hashNode *node);
 void split(hashNode* oldNode);
 bool hashCompare(char *val, char* key, int prefix);
-//hashNode* search(unsigned int id);
 hashNode *createHashNode();
 void initNode(hashNode *node);
 bucket *createBucket();
 student *createStudent();
 void createDB(hashNode *node);
+char *uintToBinary(unsigned int i);
+bool hashCompare(char *val, char* key, int prefix);
+void makeHashTable(hashTable *tb, hashNode *hsNode);
+extern const bool studentTable;
+extern const bool profTable;
+extern bool tableType;

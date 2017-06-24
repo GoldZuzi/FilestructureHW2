@@ -5,22 +5,25 @@
 #include <iostream>
 #include "BPTree.h"
 using namespace std;
-int depth;
+int depth = 0;
+int btNodeCount = 0;
+int btRootNodeNum = 1;
 
 node* createNode() {
 	node *newNode;
 	newNode = (struct node *)malloc(sizeof(struct node));
 	memset(newNode, 0, sizeof(struct node));
-	//newNode->isLeaf = isLeaf;
-	//newNode->parentNode = parent;
 	return newNode;
 }
 
 void initNode(node *initialNode) {
-	//initialNode->isLeaf = true;
 	initialNode->elseNode = NULL;
 	initialNode->entryCount = 0;
 	depth = 0;
+	btNodeCount = 1;
+	btRootNodeNum = 1;
+	writeCommonInfo();
+	writeNodeInfo(initialNode, btRootNodeNum);
 }
 
 void copyNodeEntry(node *dst, node *src, int dstFirst, int srcFirst, int size) {
@@ -28,10 +31,12 @@ void copyNodeEntry(node *dst, node *src, int dstFirst, int srcFirst, int size) {
 	memcpy(&dst->nodeEntry[dstFirst], &src->nodeEntry[srcFirst], size);
 }
 
-static struct node* split(node *nodeToSplit, float key, vector<node*> &parentSet, int parentIndex, bool isLeaf) {
+int split(node *nodeToSplit, float key, vector<unsigned int> &parentSet, int parentIndex, bool isLeaf, int leftNodeNum) {
 	int splitFactor = ((ENTRYSIZE -1) >> 1);
 	float splitKey = nodeToSplit->nodeEntry[splitFactor].score;
-	
+	int rightNodeNum;
+	int parentNodeNum;
+
 	node *parentNode = NULL;
 	node *leftNode = NULL;
 	node *rightNode = NULL;
@@ -42,11 +47,13 @@ static struct node* split(node *nodeToSplit, float key, vector<node*> &parentSet
 	leftNode = nodeToSplit;	//
 	//rightNode = createNode(nodeToSplit->isLeaf);	
 	rightNode = createNode();
+	btNodeCount++;
+	rightNodeNum = btNodeCount;
 	copyNodeEntry(rightNode, nodeToSplit, 0, splitFactor + 1, ENTRYSIZE - splitFactor + 1);
 		
 	if (isLeaf) {
 		rightNode->elseNode = leftNode->elseNode;
-		leftNode->elseNode = rightNode;
+		leftNode->elseNode = rightNodeNum;
 	}
 	else leftNode->elseNode = leftNode->nodeEntry[splitFactor + 1].a.childNode;
 	
@@ -58,39 +65,51 @@ static struct node* split(node *nodeToSplit, float key, vector<node*> &parentSet
 	leftNode->entryCount = splitFactor + 1;
 	rightNode->entryCount = ENTRYSIZE - (splitFactor + 1);
 	
+	writeNodeInfo(leftNode, leftNodeNum);
+	writeNodeInfo(rightNode, rightNodeNum);
+	writeCommonInfo();
+
 	/*ParentNode를 지정하는 과정*/
-	if (parentSet[parentIndex] == NULL) {   //분할되는 노드가 기존의 루트노드였을 경우
+	if (parentSet[parentIndex] == 0) {   //분할되는 노드가 기존의 루트노드였을 경우
 		parentNode = createNode(); //ParentNode 생성
-		root = parentNode;
+		btNodeCount++;
+		parentNodeNum = btNodeCount;
+		btRootNodeNum = parentNodeNum;
 		depth++;
-	}
-	
+		writeCommonInfo();
+	}	
 	else { //ParentNode는 기존 노드의 상위 노드
-		parentNode = parentSet[parentIndex];
-		
+		parentNodeNum = parentSet[parentIndex];
+		parentNode = createNode();
+		loadNodeInfo(parentNode, parentNodeNum);
 		/*parentNode가 꽉 찼을 경우 스플릿*/
 		if (parentNode->entryCount == ENTRYSIZE) {
-			parentNode = split(parentNode, splitKey, parentSet, parentIndex - 1, false);
+			parentNodeNum = split(parentNode, splitKey, parentSet, parentIndex - 1, false, parentNodeNum);
+			loadNodeInfo(parentNode, parentNodeNum);
 		}
 	}
 	
 	/*---------여기에 parent노드에 삽입되는 부분 작성--------*/
-	internalNodeInsert(parentNode, splitKey, leftNode, rightNode);
-
-	if (key < splitKey) {
-		return leftNode;
+	internalNodeInsert(parentNode, splitKey, leftNodeNum, rightNodeNum);
+	writeNodeInfo(parentNode, parentNodeNum);
+	
+	//free(parentNode);
+	//free(rightNode);
+	//free(leftNode);
+	if (key <= splitKey) {
+		return leftNodeNum;
 	}
 	else {
-		return rightNode;
+		return rightNodeNum;
 	}
 }
 
-void internalNodeInsert(node *internalNode, float key, node *leftNode, node *rightNode) {
+void internalNodeInsert(node *internalNode, float key, int leftNodeNum, int rightNodeNum) {
 	entry newEntry;
 	blockPointer ptr;
 	
 	/*삽입될 엔트리가 가리키는 포인터는 왼쪽 child 노드*/
-	ptr.childNode = leftNode;
+	ptr.childNode = leftNodeNum;
 	/*엔트리 생성*/
 	//createNewEntry(&newEntry, internalNode->isLeaf, key, ptr);
 	createNewEntry(&newEntry, false, key, ptr);
@@ -110,23 +129,26 @@ void internalNodeInsert(node *internalNode, float key, node *leftNode, node *rig
 
 	/*엔트리가 노드의 가장 끝에 삽입될 경우*/
 	if (index == internalNode->entryCount) {
-		internalNode->elseNode = rightNode;
+		internalNode->elseNode = rightNodeNum;
 	}
 	/*엔트리가 노드의 중간 어딘가 삽입될 경우*/
 	else {
-		internalNode->nodeEntry[index + 1].a.childNode = rightNode;
+		internalNode->nodeEntry[index + 1].a.childNode = rightNodeNum;
 	}
 	internalNode->entryCount++;
 }
 
 int search(float key) {
-	return searchDetail(root, key);
+	node root;
+	loadNodeInfo(&root, btRootNodeNum);
+	return searchDetail(&root, key);
 }
 
 int searchDetail(node *currentNode, float key)
 {
 	int count = 0;
 	int currentDepth = 0;
+	int currentNodeNum = 0;
 	while (1) {
 		//if (currentNode->isLeaf) break;
 		if (currentDepth == depth) break;
@@ -136,14 +158,16 @@ int searchDetail(node *currentNode, float key)
 				if (key <= currentNode->nodeEntry[i].score) {
 					//if (currentNode->isLeaf) break;
 					if (currentDepth == depth) break;
-					currentNode = currentNode->nodeEntry[i].a.childNode;
+					currentNodeNum = currentNode->nodeEntry[i].a.childNode;
+					loadNodeInfo(currentNode, currentNodeNum);
 					currentDepth++;
 					break;
 				}
 				if (count == currentNode->entryCount) {
 					//if (currentNode->isLeaf) break;
 					if (currentDepth == depth) break;
-					currentNode = currentNode->elseNode;
+					currentNodeNum = currentNode->elseNode;
+					loadNodeInfo(currentNode, currentNodeNum);
 					currentDepth++;
 					break;
 				}
@@ -162,6 +186,68 @@ int searchDetail(node *currentNode, float key)
 	return -1;
 }
 
+void rangeSearch(float min, float max) {
+	loadFile();
+	node *currentNode = createNode();
+	loadNodeInfo(currentNode, btRootNodeNum);
+
+	int count = 0;
+	int currentDepth = 0;
+	int currentNodeNum = 0;
+	while (1) {
+		//if (currentNode->isLeaf) break;
+		if (currentDepth == depth) break;
+		if (currentNode->entryCount > 0) {
+			for (int i = 0; i < currentNode->entryCount; i++) {
+				count++;
+				if (min <= currentNode->nodeEntry[i].score) {
+					//if (currentNode->isLeaf) break;
+					if (currentDepth == depth) break;
+					currentNodeNum = currentNode->nodeEntry[i].a.childNode;
+					loadNodeInfo(currentNode, currentNodeNum);
+					currentDepth++;
+					break;
+				}
+				if (count == currentNode->entryCount) {
+					//if (currentNode->isLeaf) break;
+					if (currentDepth == depth) break;
+					currentNodeNum = currentNode->elseNode;
+					loadNodeInfo(currentNode, currentNodeNum);
+					currentDepth++;
+					break;
+				}
+			}
+			count = 0;
+		}
+	}
+	bool more = true;
+	int blockNum;
+
+	while (more) {
+		for (int i = 0; i < currentNode->entryCount; i++) {
+			if (min <= currentNode->nodeEntry[i].score)
+			{
+				if (max >= currentNode->nodeEntry[i].score) {
+					blockNum = currentNode->nodeEntry[i].a.blockNum;
+					cout << blockNum << endl;
+					//searchDB(blockNum);
+				}
+				else {
+					more = false;
+					break;
+				}
+			}			
+		}		
+		if (!more) break;
+
+		if(currentNode->elseNode != NULL && currentNode->elseNode != 0)
+			loadNodeInfo(currentNode, currentNode->elseNode);
+		else 
+			break;
+	}
+	free(currentNode);
+}
+
 void createNewEntry(entry *newEntry, bool isLeaf, float key, blockPointer ptr) {
 	newEntry->score = key;
 	if (isLeaf) 
@@ -172,37 +258,40 @@ void createNewEntry(entry *newEntry, bool isLeaf, float key, blockPointer ptr) {
 
 bool insert(float key, blockPointer ptr) {
 	entry newEntry;
-	node *tmpNode = root;
+	node *tmpNode = createNode();
 	int count = 0;
 	int index;
-	vector<node*> parentSet;
-	node *parentNode = NULL;
+	vector<unsigned int> parentSet;
+	int parentNode = 0;
 	int currentDepth = 0;
+	int tmpNodeNum = btRootNodeNum;
+
+	loadNodeInfo(tmpNode, btRootNodeNum);
 
 	/*key값이 이미 트리에 존재하는지 체크*/
-	if (search(key) >= 0) {
-		return false;
-	}
+	//if (search(key) >= 0) {
+		//return false;
+	//}
 
 	/*엔트리를 삽입할 리프노드를 찾는 단계*/
 	while (1) {
 		parentSet.push_back(parentNode);
-		//if (tmpNode->isLeaf) break;
 		if (currentDepth == depth) break;
 		if (tmpNode->entryCount > 0) {
 			for (int i = 0; i < tmpNode->entryCount; i++) {
 				count++;
 				if (key <= tmpNode->nodeEntry[i].score) {
-					parentNode = tmpNode;
-					tmpNode = tmpNode->nodeEntry[i].a.childNode;
+					parentNode = tmpNodeNum;
+					tmpNodeNum = tmpNode->nodeEntry[i].a.childNode;
+					loadNodeInfo(tmpNode, tmpNodeNum);
 					currentDepth++;
 					break;
 				}
 				if (count == tmpNode->entryCount) {
-					//if (tmpNode->isLeaf) break;
 					if (currentDepth == depth) break;
-					parentNode = tmpNode;
-					tmpNode = tmpNode->elseNode;
+					parentNode = tmpNodeNum;
+					tmpNodeNum = tmpNode->elseNode;
+					loadNodeInfo(tmpNode, tmpNodeNum);
 					currentDepth++;
 					break;
 				}
@@ -213,7 +302,9 @@ bool insert(float key, blockPointer ptr) {
 
 	/*해당 리프가 꽉 찼을 경우 노드 분할*/
 	if (tmpNode->entryCount == ENTRYSIZE) {
-		tmpNode = split(tmpNode, key, parentSet, parentSet.size() - 1, true);
+		tmpNodeNum = split(tmpNode, key, parentSet, parentSet.size() - 1, true, tmpNodeNum);
+		//tmpNode = createNode();
+		loadNodeInfo(tmpNode, tmpNodeNum);
 	}
 
 	/*새로운 엔트리 생성*/
@@ -237,35 +328,12 @@ bool insert(float key, blockPointer ptr) {
 	memcpy(&tmpNode->nodeEntry[index], &newEntry, sizeof(struct entry)); //엔트리 삽입
 	tmpNode->entryCount++;
 	//}
-
+	/*이 부분에 갱신된 노드를 파일에 쓰도록 함. 그다음 메모리 해제.*/
+	writeNodeInfo(tmpNode, tmpNodeNum);
+	free(tmpNode);
 	return true;
 }
 
-node* sequencialSearch(int k) {
-	node *tmp;
-	tmp = root;
-	int currentDepth = 0;
-	tmp = seqSearchDetail(root, k, currentDepth);
-	for (int i = 1; i < k; i++) {
-		if (tmp->elseNode != NULL) {
-			tmp = tmp->elseNode;
-		}
-		else
-			return NULL;
-	}
-	return tmp;
-}
-node* seqSearchDetail(node *currentNode, int k, int currentDepth) {
-	if (currentDepth != depth) {
-		if (currentNode->entryCount != 0) {
-			return seqSearchDetail(currentNode->nodeEntry[0].a.childNode, k, currentDepth + 1);
-		}
-		else
-			return NULL;
-	}
-	else
-		return currentNode;
-}
 
 
 

@@ -16,6 +16,7 @@ FILE* studentHashTable = NULL;
 FILE* profHashTable = NULL;
 FILE* stDB = NULL;
 FILE* proDB = NULL;
+FILE* resultFile = NULL;
 hashTable stTable;
 hashTable prTable;
 
@@ -142,7 +143,8 @@ void studentExactSearch(int key) {
 	rewind(stDB);
 	for (int i = 0; i < MAXNUM; i++) {
 		if (key == st[i].studentID) {
-			cout << st[i].name << "  " << st[i].studentID << "  " << st[i].score << "  " << st[i].advisorID << endl; //여기에 파일 추가하는 부분 추가
+			fprintf(resultFile, "%s, %d, %f, %d\n", st[i].name, st[i].studentID, st[i].score, st[i].advisorID);
+			//cout << st[i].name << "  " << st[i].studentID << "  " << st[i].score << "  " << st[i].advisorID << endl; //여기에 파일 추가하는 부분 추가
 			break;
 		}
 	}
@@ -164,14 +166,37 @@ void profExactSearch(int key) {
 	rewind(proDB);
 	for (int i = 0; i < 146; i++) {
 		if (key == pf[i].professorID) {
-			cout << pf[i].name << "  " << pf[i].professorID << "  " << pf[i].salary << endl; //여기에 파일 추가하는 부분 추가
+			fprintf(resultFile, "%s, %d, %d\n", pf[i].name, pf[i].professorID, pf[i].salary);
+			//cout << pf[i].name << "  " << pf[i].professorID << "  " << pf[i].salary << endl; //여기에 파일 추가하는 부분 추가
 			break;
 		}
 	}
 }
 
-void join() {
-
+void join() {	
+	student st[MAXNUM];
+	professor pf[146];
+	int stBlockNum = 0;
+	int pfBlockNum = 0;
+	char a[9];
+	while(1) {
+		fread(pf, sizeof(struct professor), 146, proDB);
+		fread(a, 8, 1, proDB);
+		if (feof(proDB) != 0)	break;
+		while(1) {
+			fread(st, sizeof(struct student), MAXNUM, stDB);
+			if (feof(stDB) != 0)	break;
+			for (int k = 0; k < 146 && pf[k].professorID != 0; k++) {
+				for (int l = 0; l < MAXNUM && st[l].studentID != 0; l++) {
+					if (pf[k].professorID == st[l].studentID) {
+						fprintf(resultFile, "%s, %d, %d, %s, %d, %f\n", pf[k].name, pf[k].professorID, pf[k].salary, st[l].name, st[l].studentID, st[l].score);
+					}
+				}
+			}
+		}
+		rewind(stDB);
+	}
+	rewind(proDB);	
 }
 
 void query() {
@@ -210,12 +235,14 @@ void query() {
 		attributeName[14] = 0;
 
 		if (strcmp("Search-Exact", queryState) == 0) {
+			fprintf(resultFile, "---------------------------------- Professor exact-search result ----------------------------------\n");
 			if (strcmp("Professors", tableName) == 0) {
 				token = strtok_s(NULL, ",", &context);
 				id = atoi(token);
 				profExactSearch(id);
 			}
 			else if(strcmp("Students", tableName) == 0) {
+				fprintf(resultFile, "---------------------------------- Student exact-search result ----------------------------------\n");
 				token = strtok_s(NULL, ",", &context);
 				id = atoi(token);
 				studentExactSearch(id);
@@ -223,6 +250,7 @@ void query() {
 		}
 		else if(strcmp("Search-Range", queryState) == 0) {
 			if (strcmp("Professors", tableName) == 0) {
+				fprintf(resultFile, "---------------------------------- Professor range-search result ----------------------------------\n");
 				token = strtok_s(NULL, ",", &context);
 				min = atoi(token);
 				token = strtok_s(NULL, ",", &context);
@@ -230,6 +258,7 @@ void query() {
 				salaryRangeSearch(min, max);
 			}
 			else if (strcmp("Students", tableName) == 0) {
+				fprintf(resultFile, "---------------------------------- Student range-search result ----------------------------------\n");
 				token = strtok_s(NULL, ",", &context);
 				fmin = atof(token);
 				token = strtok_s(NULL, ",", &context);
@@ -238,6 +267,7 @@ void query() {
 			}
 		}
 		else if(strcmp("Join", queryState) == 0) {
+			fprintf(resultFile, "----------------------------------------- Join result -----------------------------------------\n");
 			join();
 		}
 	}
@@ -249,11 +279,13 @@ int main() {
 	//makeProfessorDB();
 	fopen_s(&stDB, "students.DB", "rb");
 	fopen_s(&proDB, "professors.DB", "rb");
+	fopen_s(&resultFile, "query.result", "wt");
 	loadHashTable(&stTable, studentTable);
 	loadHashTable(&prTable, profTable);		
 	//studentExactSearch(30585);
 	scoreRangeSearch(6.19001, 6.3);
-	//salaryRangeSearch(100003, 100530);
+	salaryRangeSearch(100003, 100530);
+	join();
 	fclose(proDB);
 	fclose(stDB);
 	return 0;

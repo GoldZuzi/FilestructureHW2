@@ -99,18 +99,24 @@ void split(hashNode* oldNode) {
 			if (tableType == studentTable) {
 				newNode->buc->data.studentSet[newNode->buc->count] = oldNode->buc->data.studentSet[i];
 				newNode->buc->count++;
-				memmove(&oldNode->buc->data.studentSet[i], &oldNode->buc->data.studentSet[i + 1], sizeof(struct student) * (oldNode->buc->count - i - 1));
-				oldNode->buc->count--;
-				k--;
-				i--;
+				if (i < MAXNUM - 1) {
+					memmove(&oldNode->buc->data.studentSet[i], &oldNode->buc->data.studentSet[i + 1], sizeof(struct student) * (oldNode->buc->count - i - 1));
+					memset(&oldNode->buc->data.studentSet[oldNode->buc->count - 1], 0, sizeof(struct student));
+					oldNode->buc->count--;
+					k--;
+					i--;
+				}
 			}
 			else {
 				newNode->buc->data.professorSet[newNode->buc->count] = oldNode->buc->data.professorSet[i];
 				newNode->buc->count++;
-				memmove(&oldNode->buc->data.professorSet[i], &oldNode->buc->data.professorSet[i + 1], sizeof(struct professor) * (oldNode->buc->count - i - 1));
-				oldNode->buc->count--;
-				k--;
-				i--;
+				if (i < 146 - 1) {
+					memmove(&oldNode->buc->data.professorSet[i], &oldNode->buc->data.professorSet[i + 1], sizeof(struct professor) * (oldNode->buc->count - i - 1));
+					memset(&oldNode->buc->data.professorSet[oldNode->buc->count - 1], 0, sizeof(struct professor));
+					oldNode->buc->count--;
+					k--;
+					i--;
+				}
 			}
 		}
 		//free(tmp);

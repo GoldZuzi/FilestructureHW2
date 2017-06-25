@@ -110,21 +110,25 @@ void makeProfessorDB() {
 
 
 void scoreRangeSearch(float min, float max) {
+	int resultCount;
 	tableType = studentTable;
 	fopen_s(&pFile, "Students_score.idx", "rb");
 	loadFile();
-	rangeSearch(min, max);
+	resultCount = rangeSearch(min, max);
 	fclose(pFile);
+	fprintf(resultFile, "%d\n", resultCount);
 }
 
 void salaryRangeSearch(int min, int max) {
+	int resultCount;
 	tableType = profTable;
 	float fmin = min;
 	float fmax = max;
 	fopen_s(&pFile, "Professor_Salary.idx", "rb");
 	loadFile();
-	rangeSearch(fmin, fmax);
+	resultCount = rangeSearch(fmin, fmax);
 	fclose(pFile);
+	fprintf(resultFile, "%d\n", resultCount);
 }
 
 void studentExactSearch(int key) {		
@@ -226,7 +230,7 @@ void query() {
 		for (int i = 0; i < 14; i++) {
 			tableName[i] = token[i];
 		}
-		tableName[15] = 0;
+		tableName[14] = 0;
 
 		token = strtok_s(NULL, ",", &context);
 		for (int i = 0; i < 14; i++) {
@@ -234,9 +238,9 @@ void query() {
 		}
 		attributeName[14] = 0;
 
-		if (strcmp("Search-Exact", queryState) == 0) {
-			fprintf(resultFile, "---------------------------------- Professor exact-search result ----------------------------------\n");
+		if (strcmp("Search-Exact", queryState) == 0) {		
 			if (strcmp("Professors", tableName) == 0) {
+				fprintf(resultFile, "---------------------------------- Professor exact-search result ----------------------------------\n");
 				token = strtok_s(NULL, ",", &context);
 				id = atoi(token);
 				profExactSearch(id);
@@ -282,10 +286,7 @@ int main() {
 	fopen_s(&resultFile, "query.result", "wt");
 	loadHashTable(&stTable, studentTable);
 	loadHashTable(&prTable, profTable);		
-	//studentExactSearch(30585);
-	scoreRangeSearch(6.19001, 6.3);
-	salaryRangeSearch(100003, 100530);
-	join();
+	query();
 	fclose(proDB);
 	fclose(stDB);
 	return 0;

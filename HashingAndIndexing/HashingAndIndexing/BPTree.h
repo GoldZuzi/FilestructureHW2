@@ -47,7 +47,7 @@ void loadNodeInfo(node *currentNode, int nodeBlockNum);
 //node* sequencialSearch(int k);
 //node* seqSearchDetail(node *currentNode, int k, int currentDepth);
 void writeCommonInfo();
-void rangeSearch(float min, float max);
+int rangeSearch(float min, float max);
 void studentExactSearch(int key);
 void profExactSearch(int key);
 

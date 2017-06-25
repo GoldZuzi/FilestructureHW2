@@ -186,7 +186,7 @@ int searchDetail(node *currentNode, float key)
 	return -1;
 }
 
-void rangeSearch(float min, float max) {
+int rangeSearch(float min, float max) {
 	loadFile();
 	node *currentNode = createNode();
 	loadNodeInfo(currentNode, btRootNodeNum);
@@ -222,13 +222,14 @@ void rangeSearch(float min, float max) {
 	}
 	bool more = true;
 	int blockNum;
-
+	int resultCount = 0;
 	while (more) {
 		for (int i = 0; i < currentNode->entryCount; i++) {
 			if (min <= currentNode->nodeEntry[i].score)
 			{
 				if (max >= currentNode->nodeEntry[i].score) {
 					blockNum = currentNode->nodeEntry[i].a.blockNum;
+					resultCount++;
 					if (tableType == studentTable)
 						studentExactSearch(blockNum);
 					else
@@ -247,7 +248,9 @@ void rangeSearch(float min, float max) {
 		else 
 			break;
 	}
+
 	free(currentNode);
+	return resultCount;
 }
 
 void createNewEntry(entry *newEntry, bool isLeaf, float key, blockPointer ptr) {
